@@ -3,13 +3,15 @@
 import React, { useState, useEffect } from "react";
 import WebRTCClient from "@/utils/WebRTCClient";
 
+type SharedScreen = {
+  id: number; // ID duy nhất cho mỗi màn hình
+  stream: MediaStream; // Luồng video của màn hình
+};
+
 const RecordPage = () => {
-  const [stream, setStream] = useState<MediaStream | null>(null); // Luồng video chia sẻ
-  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]); // Các phần video đã ghi
+  const [sharedScreens, setSharedScreens] = useState<SharedScreen[]>([]); // Danh sách các màn hình được chia sẻ
   const [webrtcClient, setWebrtcClient] = useState<WebRTCClient | null>(null); // Kết nối WebRTC
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
-    null
-  ); // Trình ghi video
+  const [screenId, setScreenId] = useState<number>(0); // Tạo ID duy nhất cho từng màn hình
 
   useEffect(() => {
     // Khởi tạo WebRTC client
@@ -17,24 +19,34 @@ const RecordPage = () => {
     setWebrtcClient(client);
 
     return () => {
-      // Dọn dẹp kết nối khi component bị hủy
+      // Dọn dẹp tất cả kết nối khi component bị hủy
       client.closeConnection();
+      sharedScreens.forEach((screen) => {
+        screen.stream.getTracks().forEach((track) => track.stop());
+      });
+      setSharedScreens([]); // Dọn dẹp sharedScreens chỉ khi component bị hủy
     };
-  }, []);
+  }, []); // Loại bỏ sharedScreens khỏi dependency array
 
-  const startRecording = async () => {
+  const startSharing = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: false,
       });
 
-      setStream(mediaStream);
+      setScreenId(screenId + 1);
+
+      // Thêm màn hình mới vào danh sách
+      setSharedScreens((prev) => [
+        ...prev,
+        { id: screenId + 1, stream: mediaStream },
+      ]);
 
       // Gửi offer qua WebRTC
       if (webrtcClient) {
         console.log("Sending offer...");
-        const targetId = "receiver-id"; // Thay 'receiver-id' bằng ID client mục tiêu
+        const targetId = `receiver-id-${screenId + 1}`; // Thay bằng ID thực tế của client mục tiêu
         await webrtcClient.sendOffer(mediaStream, targetId);
       }
     } catch (err) {
@@ -42,54 +54,41 @@ const RecordPage = () => {
     }
   };
 
-  const stopRecording = () => {
-    // Dừng ghi
-    if (mediaRecorder) {
-      mediaRecorder.stop();
+  const stopSharing = (id: number) => {
+    // Dừng stream của màn hình có ID tương ứng
+    const screen = sharedScreens.find((s) => s.id === id);
+    if (screen) {
+      screen.stream.getTracks().forEach((track) => track.stop());
     }
 
-    // Dừng các track của stream
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-    }
-
-    setStream(null);
-  };
-
-  const downloadRecording = () => {
-    // Tạo Blob từ các đoạn video đã ghi
-    const blob = new Blob(recordedChunks, { type: "video/webm" });
-    const url = URL.createObjectURL(blob);
-
-    // Tạo link để tải về
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "recording.webm";
-    a.click();
-
-    // Dọn dẹp URL
-    URL.revokeObjectURL(url);
+    // Cập nhật danh sách màn hình
+    setSharedScreens((prev) => prev.filter((s) => s.id !== id));
   };
 
   return (
     <div>
       <h1>Record Page</h1>
-      <button onClick={startRecording}>Bắt đầu chia sẻ màn hình</button>
-      {stream && (
-        <div>
-          <video
-            autoPlay
-            muted
-            ref={(ref) => {
-              if (ref) {
-                ref.srcObject = stream;
-              }
-            }}
-          ></video>
-          <button onClick={stopRecording}>Dừng chia sẻ màn hình</button>
-          <button onClick={downloadRecording}>Tải xuống video</button>
-        </div>
-      )}
+      <button onClick={startSharing}>Thêm màn hình chia sẻ</button>
+      <div>
+        {sharedScreens.map((screen) => (
+          <div key={screen.id}>
+            <h3>Màn hình {screen.id}</h3>
+            <video
+              autoPlay
+              muted
+              ref={(ref) => {
+                if (ref) {
+                  ref.srcObject = screen.stream;
+                }
+              }}
+              style={{ width: "400px", margin: "10px" }}
+            ></video>
+            <button onClick={() => stopSharing(screen.id)}>
+              Dừng chia sẻ màn hình này
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
