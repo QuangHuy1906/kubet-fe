@@ -8,7 +8,7 @@ const HomePage = () => {
 
   useEffect(() => {
     // Khởi tạo WebRTC client
-    const client = new WebRTCClient("http://localhost:3000");
+    const client = new WebRTCClient("https://record-be-lnz8.onrender.com");
 
     // Thiết lập callback khi nhận track từ peer
     client.onTrack((stream) => {
@@ -23,11 +23,20 @@ const HomePage = () => {
 
   return (
     <div>
-      <h1>Home Page</h1>
+      <h1 style={{ textAlign: "center", fontWeight: "bold", fontSize: "50px" }}>
+        Home Page
+      </h1>
       {remoteStream ? (
         <video
           autoPlay
           muted
+          style={{
+            width: "90%",
+            display: "flex",
+            justifyItems: "center",
+            margin: "auto",
+            borderRadius: "10px",
+          }}
           ref={(ref) => {
             if (ref) {
               ref.srcObject = remoteStream; // Gán stream vào video element

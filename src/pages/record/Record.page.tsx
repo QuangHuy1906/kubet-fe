@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -13,7 +14,7 @@ const RecordPage = () => {
 
   useEffect(() => {
     // Khởi tạo WebRTC client
-    const client = new WebRTCClient("http://localhost:3000");
+    const client = new WebRTCClient("https://record-be-lnz8.onrender.com");
     setWebrtcClient(client);
 
     return () => {
@@ -73,8 +74,21 @@ const RecordPage = () => {
 
   return (
     <div>
-      <h1>Record Page</h1>
-      <button onClick={startRecording}>Bắt đầu chia sẻ màn hình</button>
+      <h1 style={{ textAlign: "center", fontWeight: "bold", fontSize: "50px" }}>
+        Record Page
+      </h1>
+      <button
+        onClick={startRecording}
+        style={{
+          background: "Green",
+          padding: "10px 5px",
+          color: "white",
+          margin: "20px",
+          borderRadius: "10px",
+        }}
+      >
+        Bắt đầu chia sẻ màn hình
+      </button>
       {stream && (
         <div>
           <video
@@ -86,8 +100,19 @@ const RecordPage = () => {
               }
             }}
           ></video>
-          <button onClick={stopRecording}>Dừng chia sẻ màn hình</button>
-          <button onClick={downloadRecording}>Tải xuống video</button>
+          <button
+            onClick={stopRecording}
+            style={{
+              background: "#EB5A3E",
+              padding: "10px 5px",
+              color: "white",
+              margin: "20px",
+              borderRadius: "10px",
+            }}
+          >
+            Dừng chia sẻ màn hình
+          </button>
+          {/* <button onClick={downloadRecording}>Tải xuống video</button> */}
         </div>
       )}
     </div>
